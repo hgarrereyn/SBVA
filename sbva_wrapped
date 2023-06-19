@@ -1,0 +1,22 @@
+#!/bin/bash
+
+if [ "$#" -ne 3 ]; then
+    echo "Usage: $0 <solver> <input> <output>"
+    exit 1
+fi
+
+SBVA=./sbva
+SOLVER=$1
+INPUT=$2
+OUTPUT=$3
+
+OUTER_TIMEOUT=400
+INNER_TIMEOUT=200
+
+python3 wrapper.py \
+    --input $INPUT \
+    --output $OUTPUT \
+    --bva $SBVA \
+    --t1 $INNER_TIMEOUT \
+    --t2 $OUTER_TIMEOUT \
+    --solver $SOLVER
