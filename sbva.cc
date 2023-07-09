@@ -23,6 +23,7 @@ static bool enable_trace = 0;
 static bool generate_proof = 0;
 
 static time_t end_time = 0;
+static unsigned int max_replacements = 0;
 
 struct Clause {
     bool deleted;
@@ -409,7 +410,8 @@ public:
             proof = new vector<ProofClause>();
         }
 
-        int reduce_count = 0;
+        // Track number of replacements (new auxiliary variables).
+        int num_replacements = 0;
 
 
         while (pq.size() > 0) {
@@ -422,6 +424,14 @@ public:
                     }
                     return;
                 }
+            }
+
+            // check replacement limit
+            if (max_replacements != 0 && num_replacements == max_replacements) {
+                if (enable_trace) {
+                    cout << "Hit replacement limit (" << max_replacements << ")" << endl;
+                }
+                return;
             }
             
             matched_lits->resize(0);
@@ -788,6 +798,8 @@ public:
                 (*lit_to_clauses)[lit_index(var)].size() + (*lit_count_adjust)[lit_index(var)],
                 var
             ));
+
+            num_replacements += 1;
         }
     }
 
@@ -828,7 +840,7 @@ int main(int argc, char **argv) {
     FILE *fproof = NULL;
 
     int opt;
-    while ((opt = getopt(argc, argv, "p:i:o:t:v")) != -1) {
+    while ((opt = getopt(argc, argv, "p:i:o:t:s:v")) != -1) {
         switch (opt) {
             case 'i':
                 fin = fopen(optarg, "r");
@@ -854,6 +866,9 @@ int main(int argc, char **argv) {
                 break;
             case 't':
                 end_time = time(NULL) + atoi(optarg);
+                break;
+            case 's':
+                max_replacements = atoi(optarg);
                 break;
             case 'v':
                 enable_trace = true;

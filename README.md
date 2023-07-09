@@ -17,7 +17,7 @@ make
 ### As a preprocessor
 
 ```
-./sbva [-i input] [-o output] [-p proof] [-t timeout] [-v]
+./sbva [-i input] [-o output] [-p proof] [-t timeout] [-s max_replacements] [-v]
 ```
 
 Options:
@@ -25,6 +25,7 @@ Options:
 * `-o`: specify output file (default is stdout)
 * `-p`: if specified, save a DRAT proof of the transformation to this file
 * `-t`: if specified, the BVA algorithm will exit after this many seconds and the semi-reduced formula will be returned
+* `-s`: if specified, limits the number of replacements / new auxiliary variables
 * `-v`: enable verbose logging
 
 Examples:
