@@ -2,27 +2,30 @@
 import argparse
 import subprocess
 from tempfile import NamedTemporaryFile
+import sys
 
-def find_stats(fname):
-    with open(fname, 'r') as f:
-        for line in f:
-            if line[0] == 'p':
-                nv, nc = map(int, line.split()[2:])
-                return nv, nc
+def find_stats(s):
+    for line in s.split(b"\n"):
+        line = line.decode()
+        if line[0] == 'p':
+            nv, nc = map(int, line.split()[2:])
+            return nv, nc
 
     return (-1,-1)
 
 
-def run_solver_bare(args):
-    subprocess.run([
+def run_solver_bare(args, cnf_str):
+    argv = [
         args.solver,
-        args.input,
-        args.output,
-        '--no-binary'
-    ])
+        "-",
+    ]
+    if args.output:
+        argv += [args.output]
+    argv += ["--no-binary"]
 
+    subprocess.run(argv, input=cnf_str)
 
-def run_solver_reduced(args, reduced_cnf, reduced_drat):
+def run_solver_reduced(args, reduced_cnf, reduced_drat, orig_cnf_str):
     with NamedTemporaryFile() as solver_drat:
         p = subprocess.run([
             args.solver,
@@ -47,13 +50,14 @@ def run_solver_reduced(args, reduced_cnf, reduced_drat):
                 with open(solver_drat.name, 'r') as f:
                     proof += f.read()
 
-                with open(args.output, 'w') as f:
-                    f.write(proof)
+                if args.output:
+                    with open(args.output, 'w') as f:
+                        f.write(proof)
 
                 print('s UNSATISFIABLE')
             else:
                 # SAT: Remove auxiliary variables from solution
-                nv, _ = find_stats(args.input)
+                nv, _ = find_stats(orig_cnf_str)
 
                 lits = []
                 for line in res.split('\n'):
@@ -66,19 +70,38 @@ def run_solver_reduced(args, reduced_cnf, reduced_drat):
 
 
 def run(args):
+    if args.input:
+        with open(args.input, "rb") as f:
+            input_cnf_str = f.read()
+    else:
+        input_cnf_str = sys.stdin.buffer.read()
+
+    stats = find_stats(input_cnf_str)
+    print(f"c before: {stats}")
+
+    extra_opts = []
+    if args.no_heuristic:
+        extra_opts.append('-n')
+
+    if args.limit > 0:
+        extra_opts += ["-s", str(args.limit)]
+
     with NamedTemporaryFile() as bva_cnf, NamedTemporaryFile() as bva_drat:
         # Run BVA
         p = subprocess.run([
             'timeout', str(args.t2), args.bva,
-            '-i', args.input,
             '-o', bva_cnf.name,
             '-p', bva_drat.name,
-            '-t', str(args.t1),
-        ])
+            '-t', str(args.t1)
+        ] + extra_opts, input=input_cnf_str)
+
+        with open(bva_cnf.name, "rb") as f:
+            stats = find_stats(f.read())
+            print(f"c after: {stats}")
 
         if p.returncode == 0:
             # BVA ran successfully
-            run_solver_reduced(args, bva_cnf.name, bva_drat.name)
+            run_solver_reduced(args, bva_cnf.name, bva_drat.name, input_cnf_str)
         else:
             # Run original solver on input
             run_solver_bare(args)
@@ -86,11 +109,13 @@ def run(args):
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-i', '--input', type=str, required=True)
-    parser.add_argument('-o', '--output', type=str, required=True)
+    parser.add_argument('-i', '--input', type=str)
+    parser.add_argument('-o', '--output', type=str)
     parser.add_argument('--bva', type=str, required=True)
     parser.add_argument('--t1', type=int, help='Inner timeout', required=True)
     parser.add_argument('--t2', type=int, help='Outer timeout', required=True)
     parser.add_argument('--solver', type=str, required=True)
+    parser.add_argument('--limit', type=int, default=0)
+    parser.add_argument('--no-heuristic', action="store_true")
     args = parser.parse_args()
     run(args)

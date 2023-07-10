@@ -1,0 +1,39 @@
+#!/bin/bash
+
+SOLVER=cadical
+SBVA=./sbva
+OUTER_TIMEOUT=400
+INNER_TIMEOUT=200
+
+args=( \
+    --bva $SBVA \
+    --t1 $INNER_TIMEOUT \
+    --t2 $OUTER_TIMEOUT \
+    --solver $SOLVER
+)
+
+if [ "$(basename $0)" == "bva_cadical" ]; then
+    args+=(--no-heuristic --limit 10)
+fi
+
+if [ "$#" -gt 2 ]; then
+    echo "Usage: $0 <input> <output>"
+    exit 1
+elif [ "$#" -eq 1 ]; then
+    INPUT=$(realpath $1)
+
+    args+=( \
+        --input $INPUT \
+    )
+elif [ "$#" -eq 2 ]; then
+    INPUT=$(realpath $1)
+    OUTPUT=$(realpath $2)
+
+    args+=( \
+        --input $INPUT \
+        --output $OUTPUT \
+    )
+fi
+
+cd "$(dirname "${BASH_SOURCE[0]}")"
+python3 wrapper.py "${args[@]}"

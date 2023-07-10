@@ -97,6 +97,11 @@ struct ClauseCache {
     }
 };
 
+enum Tiebreak {
+    ThreeHop, // default
+    None, // use sorted order (should be equivalent to original BVA)
+};
+
 
 uint32_t lit_index(int32_t lit) {
     return (lit > 0 ? lit * 2 - 2 : -lit * 2 - 1);
@@ -324,7 +329,7 @@ public:
         }
     }
 
-    void run() {
+    void run(Tiebreak tiebreak_mode) {
         struct pair_op {
             bool operator()(const pair<int, int> &a, const pair<int, int> &b) {
                 return a.first < b.first;
@@ -597,7 +602,7 @@ public:
                 }
 
                 // Break ties
-                if (ties.size() > 1) {
+                if (ties.size() > 1 && tiebreak_mode == Tiebreak::ThreeHop) {
                     int max_heuristic_val = tiebreaking_heuristic(var, ties[0]);
                     for (int i=1; i<ties.size(); i++) {
                         int h = tiebreaking_heuristic(var, ties[i]);
@@ -823,9 +828,9 @@ private:
 };
 
 
-void runBVA(FILE *fin, FILE *fout, FILE *fproof) {
+void runBVA(FILE *fin, FILE *fout, FILE *fproof, Tiebreak tiebreak) {
     Formula *f = Formula::parse(fin);
-    f->run();
+    f->run(tiebreak);
     f->to_cnf(fout);
     if (fproof != NULL) {
         f->to_proof(fproof);
@@ -838,9 +843,10 @@ int main(int argc, char **argv) {
     FILE *fin = stdin;
     FILE *fout = stdout;
     FILE *fproof = NULL;
+    Tiebreak tiebreak = Tiebreak::ThreeHop;
 
     int opt;
-    while ((opt = getopt(argc, argv, "p:i:o:t:s:v")) != -1) {
+    while ((opt = getopt(argc, argv, "p:i:o:t:s:vn")) != -1) {
         switch (opt) {
             case 'i':
                 fin = fopen(optarg, "r");
@@ -873,11 +879,14 @@ int main(int argc, char **argv) {
             case 'v':
                 enable_trace = true;
                 break;
+            case 'n':
+                tiebreak = Tiebreak::None;
+                break;
             default:
                 fprintf(stderr, "Usage: %s [-i input] [-o output]\n", argv[0]);
                 return 1;
         }
     }
 
-    runBVA(fin, fout, fproof);
+    runBVA(fin, fout, fproof, tiebreak);
 }
