@@ -131,7 +131,6 @@ public:
     void read_cnf(FILE *fin) {
         char *line = NULL;
         size_t len = 0;
-        ssize_t read;
 
         ClauseCache cache;
 
@@ -212,7 +211,6 @@ public:
             Clause *cls = &(*clauses)[cid];
             if (cls->deleted) continue;
             for (int v : cls->lits) {
-                int vabs = std::abs(v);
                 vec.coeffRef(sparsevec_lit_idx(v)) += 1;
             }
         }
