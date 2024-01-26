@@ -21,7 +21,7 @@ make
 ### As a preprocessor
 
 ```
-./sbva [-i input] [-o output] [-p proof] [-t timeout] [-s max_replacements] [-v]
+./sbva [-i input] [-o output] [-p proof] [-t timeout] [-s max_replacements] [-v] [-n]
 ```
 
 Options:
@@ -31,6 +31,7 @@ Options:
 * `-t`: if specified, the BVA algorithm will exit after this many seconds and the semi-reduced formula will be returned
 * `-s`: if specified, limits the number of replacements / new auxiliary variables
 * `-v`: enable verbose logging
+* `-n`: disable heuristic tiebreaking (breaks ties using variable order)
 
 Examples:
 
