@@ -21,6 +21,7 @@ using namespace std;
 
 static bool enable_trace = 0;
 static bool generate_proof = 0;
+static bool preserve_model_count = 0;
 
 static time_t end_time = 0;
 static unsigned int max_replacements = 0;
@@ -682,7 +683,7 @@ public:
             int new_var = num_vars;
 
             // Prepare to add new clauses.
-            clauses->resize(num_clauses + matched_lit_count + matched_clause_count);
+            clauses->resize(num_clauses + matched_lit_count + matched_clause_count + (preserve_model_count ? 1 : 0));
             lit_to_clauses->resize(num_vars * 2);
             lit_count_adjust->resize(num_vars * 2);
             if (sparsevec_lit_idx(new_var) >= adjacency_matrix_width) {
@@ -739,6 +740,32 @@ public:
                 }
             }
 
+            // Preserving model count:
+            //
+            // The only case where we add a model is if both assignments for the auxiiliary variable satisfy the formula
+            // for the same assignment of the original variables. This only happens if all(matched_lits) *AND*
+            // all(matches_clauses) are satisfied.
+            //
+            // The easiest way to fix this is to add one clause that constrains all(matched_lits) => -f
+            if (preserve_model_count) {
+                int new_clause = num_clauses + matched_lit_count + matched_clause_count;
+                auto cls = Clause();
+                cls.lits.push_back(-new_var);
+                for (int i = 0; i < matched_lit_count; ++i) {
+                    int lit = (*matched_lits)[i];
+                    cls.lits.push_back(-lit);
+                    (*lit_to_clauses)[lit_index(-lit)].push_back(new_clause);
+                }
+
+                (*clauses)[new_clause] = cls;
+                (*lit_to_clauses)[(lit_index(-new_var))].push_back(new_clause);
+
+                if (generate_proof) {
+                    proof->push_back(ProofClause(true, cls.lits));
+                }
+            }
+
+
             set<int> valid_clause_ids;
             for (int i = 0; i < matched_clause_count; ++i) {
                 valid_clause_ids.insert((*matched_clauses_id)[i]);
@@ -770,7 +797,7 @@ public:
             }
 
             adj_deleted += removed_clause_count;
-            num_clauses += matched_lit_count + matched_clause_count;
+            num_clauses += matched_lit_count + matched_clause_count + (preserve_model_count ? 1 : 0);
 
             // Update priorities.
             for (auto lit : lits_to_update) {
@@ -844,7 +871,7 @@ int main(int argc, char **argv) {
     Tiebreak tiebreak = Tiebreak::ThreeHop;
 
     int opt;
-    while ((opt = getopt(argc, argv, "p:i:o:t:s:vn")) != -1) {
+    while ((opt = getopt(argc, argv, "p:i:o:t:s:vnc")) != -1) {
         switch (opt) {
             case 'i':
                 fin = fopen(optarg, "r");
@@ -879,6 +906,9 @@ int main(int argc, char **argv) {
                 break;
             case 'n':
                 tiebreak = Tiebreak::None;
+                break;
+            case 'c':
+                preserve_model_count = true;
                 break;
             default:
                 fprintf(stderr, "Usage: %s [-i input] [-o output]\n", argv[0]);
