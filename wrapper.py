@@ -67,6 +67,10 @@ def run_solver_reduced(args, reduced_cnf, reduced_drat):
 
 def run(args):
     with NamedTemporaryFile() as bva_cnf, NamedTemporaryFile() as bva_drat:
+        extra_args = []
+        if args.preserve_model_count:
+            extra_args += ["-c"]
+
         # Run BVA
         p = subprocess.run([
             'timeout', str(args.t2), args.bva,
@@ -74,10 +78,11 @@ def run(args):
             '-o', bva_cnf.name,
             '-p', bva_drat.name,
             '-t', str(args.t1),
-        ])
+        ] + extra_args)
 
         if p.returncode == 0:
             # BVA ran successfully
+            nv, nc = find_stats(bva_cnf.name)
             run_solver_reduced(args, bva_cnf.name, bva_drat.name)
         else:
             # Run original solver on input
@@ -89,6 +94,7 @@ if __name__=='__main__':
     parser.add_argument('-i', '--input', type=str, required=True)
     parser.add_argument('-o', '--output', type=str, required=True)
     parser.add_argument('--bva', type=str, required=True)
+    parser.add_argument('--preserve-model-count', action="store_true", default=False)
     parser.add_argument('--t1', type=int, help='Inner timeout', required=True)
     parser.add_argument('--t2', type=int, help='Outer timeout', required=True)
     parser.add_argument('--solver', type=str, required=True)
