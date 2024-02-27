@@ -863,8 +863,8 @@ int main(int argc, char **argv) {
             case 'p':
                 generate_proof = true;
                 fproof = fopen(optarg, "w");
-                if (fin == NULL) {
-                    fprintf(stderr, "Error: Could not open file %s for reading\n", optarg);
+                if (fproof == NULL) {
+                    fprintf(stderr, "Error: Could not open file %s for writing\n", optarg);
                     return 1;
                 }
                 break;
