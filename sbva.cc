@@ -18,6 +18,7 @@
 
 using namespace std;
 
+typedef unsigned long heuristic_t;
 
 static bool enable_trace = 0;
 static bool generate_proof = 0;
@@ -232,7 +233,7 @@ public:
         adjacency_matrix[sparsevec_lit_idx(abslit)] = vec;
     }
 
-    int tiebreaking_heuristic(int lit1, int lit2) {
+    heuristic_t tiebreaking_heuristic(int lit1, int lit2) {
         if (tmp_heuristic_cache_full.find(sparsevec_lit_idx(lit2)) != tmp_heuristic_cache_full.end()) {
             return tmp_heuristic_cache_full[sparsevec_lit_idx(lit2)];
         }
@@ -244,7 +245,7 @@ public:
         Eigen::SparseVector<int> *vec1 = &adjacency_matrix[sparsevec_lit_idx(abs1)];
         Eigen::SparseVector<int> *vec2 = &adjacency_matrix[sparsevec_lit_idx(abs2)];
 
-        int total_count = 0;
+        heuristic_t total_count = 0;
         for (int *varPtr = vec2->innerIndexPtr(); varPtr < vec2->innerIndexPtr() + vec2->nonZeros(); varPtr++) {
             int var = sparcevec_lit_for_idx(*varPtr);
             int count = vec2->coeffRef(sparsevec_lit_idx(var));
@@ -602,9 +603,9 @@ public:
 
                 // Break ties
                 if (ties.size() > 1 && tiebreak_mode == Tiebreak::ThreeHop) {
-                    int max_heuristic_val = tiebreaking_heuristic(var, ties[0]);
+                    heuristic_t max_heuristic_val = tiebreaking_heuristic(var, ties[0]);
                     for (int i=1; i<ties.size(); i++) {
-                        int h = tiebreaking_heuristic(var, ties[i]);
+                        heuristic_t h = tiebreaking_heuristic(var, ties[i]);
                         if (h > max_heuristic_val) {
                             max_heuristic_val = h;
                             lmax = ties[i];
@@ -846,7 +847,7 @@ private:
 
     int adjacency_matrix_width;
     vector< Eigen::SparseVector<int> > adjacency_matrix;
-    map< int, int > tmp_heuristic_cache_full;
+    map< int, heuristic_t > tmp_heuristic_cache_full;
 
     // proof storage
     vector<ProofClause> *proof;
