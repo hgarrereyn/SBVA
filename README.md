@@ -2,7 +2,7 @@
 
 SBVA is a tool for reducing SAT formulas using _structured bounded variable addition_.
 
-Read our SAT'23 paper: [Effective Auxiliary Variables via Structured Reencoding](https://arxiv.org/pdf/2307.01904.pdf) (preprint)
+Read our SAT'23 paper: [Effective Auxiliary Variables via Structured Reencoding](https://par.nsf.gov/servlets/purl/10489211) (or, [preprint](https://arxiv.org/pdf/2307.01904.pdf) with extra appendices)
 
 🏆 SBVA-CaDiCaL (CaDiCaL w/ SBVA as preprocessor) was the overall main-track winner of the [2023 SAT competition](https://satcompetition.github.io/2023/)! (1st overall, 1st satisfiable, 2nd unsatisfiable)
 
